@@ -205,7 +205,7 @@ def set_stop_loss():
     g.stop_loss_day = []
     g.stop_loss_minute = []
     func_register(g.stop_loss_minute, stop_loss_by_price, '大盘价格止损')
-    func_register(g.stop_loss_minute, stop_loss_by_3_crows, '三黑鸦止损')
+    # func_register(g.stop_loss_minute, stop_loss_by_3_crows, '三黑鸦止损')
     # func_register(g.stop_loss_minute,stop_loss_by_index_l,'二八止损')
     # func_register(g.stop_loss_minute,stop_loss_by_stoc,'个股止损')
     # func_register(g.stop_loss_minute,stop_profit_by_stoc,'个股止盈')
@@ -428,10 +428,10 @@ def filter_by_rank(stock_list, context, data):
     stock_list = stock_list[:g.param['rank_stock_count'][g.VALUE]]
     dst_stocks = {}
     for stock in stock_list:
-        h = attribute_history(stock, 130, unit='1d', fields=(
+        h = attribute_history(stock, 160, unit='1d', fields=(
             'close', 'high', 'low'), skip_paused=True)
-        low_price_130 = h.low.min()
-        high_price_130 = h.high.max()
+        low_price_160 = h.low.min()
+        high_price_160 = h.high.max()
 
         avg_15 = data[stock].mavg(15, field='close')
         cur_price = data[stock].close
@@ -439,8 +439,8 @@ def filter_by_rank(stock_list, context, data):
         # avg_15 = h['close'][-15:].mean()
         # cur_price = get_close_price(stock, 1, '1m')
 
-        score = (cur_price - low_price_130) + \
-            (cur_price - high_price_130) + (cur_price - avg_15)
+        score = (cur_price - low_price_160) + \
+            (cur_price - high_price_160) + (cur_price - avg_15)
         # score = ((cur_price-low_price_130) + (cur_price-high_price_130) +
         # (cur_price-avg_15)) / cur_price
         dst_stocks[stock] = score
