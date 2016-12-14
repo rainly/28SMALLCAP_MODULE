@@ -15,12 +15,9 @@
         每分钟判断个股是否从持仓后的最高价回撤幅度，如果超过个股回撤阈值，则平掉该股持仓
 
     二八止损：(必需)
-        每日指定时间，计算沪深300指数和中证500指数当前的20日涨幅，如果2个指数涨幅都为负，
+        每日指定时间，计算上证50指数和创业板指数当前的20日涨幅，如果2个指数涨幅都为负，
         则清仓，重置调仓计数，待下次调仓条件满足再操作
 
-版本：v2.0.7
-日期：2016.11.15
-作者：Morningstar
 '''
 enable_profile()
 
@@ -173,8 +170,8 @@ def set_param():
     # p['index_l']=('000300.XSHG','大盘股指数') # 沪深300指数
     # p['index_s']=('000905.XSHG','小盘股指数') # 中证500指数
     p['index_l'] = ('000016.XSHG', '大盘股指数')  # 上证50指数
-    p['index_s'] = ('399333.XSHE', '小盘股指数')  # 中小板R指数
-    # p['index_s']=('399006.XSHE','小盘股指数') # 创业板指数
+    # p['index_s'] = ('399333.XSHE', '小盘股指数')  # 中小板R指数
+    p['index_s'] = ('399006.XSHE','小盘股指数') # 创业板指数
     p['buy_stock_count'] = (3, '买入股票数目')
     p['index_growth_rate'] = (0.01, '判定调仓的二八指数n日增幅')  # n = 20
     p['index_3_crows'] = ('000001.XSHG', '判定三黑鸦的指数')
@@ -188,7 +185,7 @@ def set_filter():
     # g.filter={}
     g.filter = []
     func_register(g.filter, filter_by_query, '查询财务数据库过滤')
-    func_register(g.filter, filter_gem, '过滤创业版股票')
+    #func_register(g.filter, filter_gem, '过滤创业版股票')
     func_register(g.filter, filter_paused, '过滤停牌股票')
     func_register(g.filter, filter_st, '过滤ST及其他具有退市标签的股票')
     func_register(g.filter, filter_limitup, '过滤涨停的股票')
@@ -206,9 +203,9 @@ def set_stop_loss():
     g.stop_loss_minute = []
     func_register(g.stop_loss_minute, stop_loss_by_price, '大盘价格止损')
     # func_register(g.stop_loss_minute, stop_loss_by_3_crows, '三黑鸦止损')
-    # func_register(g.stop_loss_minute,stop_loss_by_index_l,'二八止损')
-    # func_register(g.stop_loss_minute,stop_loss_by_stoc,'个股止损')
-    # func_register(g.stop_loss_minute,stop_profit_by_stoc,'个股止盈')
+    # func_register(g.stop_loss_minute, stop_loss_by_index_l, '二八止损')
+    func_register(g.stop_loss_minute, stop_loss_by_stock, '个股止损')
+    # func_register(g.stop_loss_minute, stop_profit_by_stoc, '个股止盈')
 
 
 def set_cache():
@@ -416,9 +413,8 @@ def filter_new(stock_list, context, data):
     过滤新股
     '''
     delta = 60
-    stocks = get_all_securities(['stock'])
-    stocks = stocks[(context.current_dt.date() - stocks.start_date)
-                    > datetime.timedelta(delta)].index
+    start_date = context.current_dt.date() - datetime.timedelta(delta)
+    return [stock for stock in stock_list if get_security_info(stock).start_date < start_date]
 
 
 def filter_by_rank(stock_list, context, data):
@@ -678,13 +674,13 @@ def _get_pct_change(security, n, m):
     增加缓存避免当日多次获取数据
     '''
     pct_change = None
-    if security in g.pct_change.keys():
-        pct_change = g.pct_change[security]
+    if security in g.cache['pct_change'].keys():
+        pct_change = g.cache['pct_change'][security]
     else:
         h = attribute_history(security, n, unit='1d',
                               fields=('close'), skip_paused=True)
         pct_change = h['close'].pct_change(m)  # 3日的百分比变比（即3日涨跌幅）
-        g.pct_change[security] = pct_change
+        g.cache['pct_change'][security] = pct_change
     return pct_change
 
 
